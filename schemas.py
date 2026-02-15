@@ -50,6 +50,13 @@ class UserLoginResponse(BaseModel):
     class Config:
         # orm_mode = True
         from_attributes = True
+        
+# Get access token using refresh token
+class GetAccessTokenResponse(BaseModel):
+    access_token: str
+    
+    class Config:
+        from_attributes = True
 
 # User logout
 class UserLogoutResponse(BaseModel):

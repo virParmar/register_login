@@ -7,6 +7,7 @@ import crud
 from hasher import Hasher
 from database import engine, SessionLocal
 from enums import UserStatus
+from datetime import datetime, timezone
 
 models.Base.metadata.create_all(bind = engine)
 
@@ -111,3 +112,46 @@ def logout_user(token: str, db: Session = Depends(get_db)):
     return {
         "message": "User logged out successfully :)",     
     }
+    
+@app.post("/auth/refresh", response_model=schemas.GetAccessTokenResponse)
+def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+    
+    db_token = db.query(models.UserLogin).filter(
+        models.UserLogin.refresh_token == refresh_token
+        ).first()
+    
+    if not db_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid refresh token!!"
+        )
+        
+    db_expire = db_token.refresh_token_expiration_date
+
+    # Convert DB time to UTC if naive
+    if db_expire.tzinfo is None:
+        db_expire = db_expire.replace(tzinfo=timezone.utc)
+
+    current_time = datetime.now(timezone.utc)
+
+    if db_expire < current_time:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token expired"
+        )
+        
+    db_user = db.query(models.UserRegister).filter(
+        models.UserRegister.id == db_token.user_id
+        ).first()
+        
+    new_access_token = create_access_token(
+        data={"sub": db_user.username}
+    )
+    
+    db_token.access_token = new_access_token
+    db.commit()
+    
+    return {
+        "access_token": new_access_token
+    }
+        
