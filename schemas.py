@@ -37,7 +37,8 @@ class UserLoginUpdate(UserLoginBase):
     pass
 
 class UserLoginResponse(BaseModel):
-    token: str
+    access_token: str
+    refresh_token: str
     token_type: str
     id: int
     username: str

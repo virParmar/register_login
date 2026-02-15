@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
-from jwt_handler import create_access_token
+from jwt_handler import create_access_token, create_refresh_token
 import models
 import schemas
 import crud
@@ -51,13 +51,17 @@ def login_user(user_data: schemas.UserLoginCreate, db: Session = Depends(get_db)
         )
         
     # create JWT Token
-    token = create_access_token(
+    access_token = create_access_token(
         data={"sub": user.username}
     )
-    crud.store_token(db, user, token)
+    refresh_token = create_refresh_token(
+        data={"sub": user.username}
+    )
+    crud.store_token(db, user, access_token, refresh_token)
         
     return {
-        "token" : token,
+        "access_token" : access_token,
+        "refresh_token" : refresh_token,
         "token_type" : "bearer",
         "id": user.id,
         "username": user.username,

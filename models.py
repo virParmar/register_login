@@ -45,7 +45,10 @@ class UserLogin(Base):
         nullable=False,
         index=True
     )
+    
     access_token = Column(String(255), unique=True, nullable=False)
+    refresh_token = Column(String(255), unique=True, nullable=False)
+    
     status = Column(
         Enum(UserStatus, name="user_status_enum"),
         default=UserStatus.active,
@@ -55,10 +58,16 @@ class UserLogin(Base):
         TIMESTAMP, 
         server_default=func.now()
     )
-    expiration_date = Column(
+    
+    access_token_expiration_date = Column(
         TIMESTAMP,
         nullable=False
     )
+    refresh_token_expiration_date = Column(
+        TIMESTAMP,
+        nullable=False
+    )
+    
     user = relationship(
         "UserRegister", 
         back_populates="user_logins"

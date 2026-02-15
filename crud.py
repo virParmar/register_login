@@ -51,28 +51,42 @@ def register_user(db: Session, user: schemas.UserCreate):
 
     return db_user
 
-def store_token(db: Session, user: models.UserRegister, new_token: str):
+def store_token(db: Session, user: models.UserRegister, new_access_token: str, new_refresh_token: str):
     
     # decode token to get payload
-    payload = jwt.decode(
-        new_token,
+    access_token_payload = jwt.decode(
+        new_access_token,
+        SECRET_KEY,
+        algorithms=[ALGORITHM],
+        options={"verify_exp": False} # Don't fail if expired
+    )
+    refresh_token_payload = jwt.decode(
+        new_refresh_token,
         SECRET_KEY,
         algorithms=[ALGORITHM],
         options={"verify_exp": False} # Don't fail if expired
     )
     
-    exp_timestamp = payload.get("exp")
-    expire_time = datetime.fromtimestamp(
-        exp_timestamp,
+    access_token_exp_timestamp = access_token_payload.get("exp")
+    refresh_token_exp_timestamp = refresh_token_payload.get("exp")
+    
+    access_token_expire_time = datetime.fromtimestamp(
+        access_token_exp_timestamp,
+        tz=timezone.utc
+    )
+    refresh_token_expire_time = datetime.fromtimestamp(
+        refresh_token_exp_timestamp,
         tz=timezone.utc
     )
     
     db_token = models.UserLogin(
         user_id = user.id,
-        token = new_token,
+        access_token = new_access_token,
+        refresh_token = new_refresh_token,
         status = UserStatus.active,
         created_at = datetime.now(timezone.utc),
-        expiration_date = expire_time   
+        access_token_expiration_date = access_token_expire_time,
+        refresh_token_expiration_date = refresh_token_expire_time
     )
     
     db.add(db_token)
